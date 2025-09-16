@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  status-page:
+    image: 992382545251.dkr.ecr.us-east-1.amazonaws.com/oyb-status-page-app:latest
+    container_name: status-page
+    restart: always
+    environment:
+      # --- Database (RDS PostgreSQL) ---
+      DATABASE_NAME: db-oyb
+      DATABASE_USER: status-page
+      DATABASE_PASSWORD: abcdefgh123456
+      DATABASE_HOST: db-oyb.cluster-cx248m4we6k7.us-east-1.rds.amazonaws.com
+      DATABASE_PORT: 5432
+
+      # --- Redis (ElastiCache) ---
+      REDIS_HOST: clustercfg.oyb-redis.7fftml.use1.cache.amazonaws.com
+      REDIS_PORT: 6379
+
+      # --- Django/Flask/Docker App secret key (במידה ונדרש) ---
+      SECRET_KEY: "change_this_to_a_secure_random_key"
+
+    ports:
+      - "80:8000"    # האפליקציה תענה ב-80 החוצה ותאזין ב-8000 בפנים
+
+    depends_on:
+      # אפשר להשאיר ריק כי RDS ו-Redis הם מנוהלים ב-AWS
+      # אם היה DB/Redis לוקלי, היינו שמים אותם פה
+      []
