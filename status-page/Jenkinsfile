@@ -11,6 +11,8 @@ pipeline {
         ECR_REGISTRY = "992382545251.dkr.ecr.us-east-1.amazonaws.com"
         ECR_REPOSITORY = "oyb-status-page-app"
         IMAGE_TAG = "latest"
+        APP_EC2_HOST = "ec2-user@<APP_EC2_PUBLIC_IP>"   // כתובת ה-EC2 של האפליקציה
+        APP_PATH = "/home/ec2-user/status-page"         // תיקיית הפרויקט באפליקציה
     }
 
     stages {
@@ -25,7 +27,7 @@ pipeline {
         stage('Install deps') {
             steps {
                 sh '''
-                    apk add --no-cache python3 py3-pip curl bash
+                    apk add --no-cache python3 py3-pip curl bash openssh-client
                     pip3 install awscli
                 '''
             }
@@ -54,6 +56,21 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 sh 'docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG'
+            }
+        }
+
+        stage('Deploy on EC2') {
+            steps {
+                script {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no $APP_EC2_HOST '
+                          cd $APP_PATH &&
+                          sed -i "s|image: .*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|" docker-compose.yml &&
+                          docker-compose pull &&
+                          docker-compose up -d
+                        '
+                    """
+                }
             }
         }
     }
